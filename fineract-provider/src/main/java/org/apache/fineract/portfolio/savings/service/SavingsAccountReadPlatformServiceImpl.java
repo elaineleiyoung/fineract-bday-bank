@@ -192,9 +192,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
         sqlBuilder.append(" join m_office o on o.id = c.office_id");
         sqlBuilder.append(" where o.hierarchy like ?");
 
-        final Object[] objectArray = new Object[2];
-        objectArray[0] = hierarchySearchString;
-        int arrayPos = 1;
+        final List<Object> paramList = new ArrayList<>(Arrays.asList(hierarchySearchString));
         if (searchParameters != null) {
             String sqlQueryCriteria = searchParameters.getSqlSearch();
             if (StringUtils.isNotBlank(sqlQueryCriteria)) {
@@ -205,13 +203,23 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
 
             if (StringUtils.isNotBlank(searchParameters.getExternalId())) {
                 sqlBuilder.append(" and sa.external_id = ?");
-                objectArray[arrayPos] = searchParameters.getExternalId();
-                arrayPos = arrayPos + 1;
+                paramList.add(searchParameters.getExternalId());
             }
             if (searchParameters.getOfficeId() != null) {
                 sqlBuilder.append("and c.office_id =?");
-                objectArray[arrayPos] = searchParameters.getOfficeId();
-                arrayPos = arrayPos + 1;
+                paramList.add(searchParameters.getOfficeId());
+            }
+            if (searchParameters.getBirthMonth() != null) {
+                sqlBuilder.append(" and extract(month from c.date_of_birth) = ?");
+                paramList.add(searchParameters.getBirthMonth());
+            }
+            if (searchParameters.getBirthDay() != null) {
+                sqlBuilder.append(" and extract(day from c.date_of_birth) = ?");
+                paramList.add(searchParameters.getBirthDay());
+            }
+            if (searchParameters.getBirthYear() != null) {
+                sqlBuilder.append(" and extract(year from c.date_of_birth) = ?");
+                paramList.add(searchParameters.getBirthYear());
             }
             if (searchParameters.isOrderByRequested()) {
                 sqlBuilder.append(" order by ").append(searchParameters.getOrderBy());
@@ -232,8 +240,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
                 }
             }
         }
-        final Object[] finalObjectArray = Arrays.copyOf(objectArray, arrayPos);
-        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlBuilder.toString(), finalObjectArray, this.savingAccountMapper);
+        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlBuilder.toString(), paramList.toArray(), this.savingAccountMapper);
     }
 
     @Override
