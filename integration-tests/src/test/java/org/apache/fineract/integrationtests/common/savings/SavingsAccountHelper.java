@@ -630,6 +630,11 @@ public class SavingsAccountHelper {
         return response;
     }
 
+    public <T> T getSavingsAccounts(final String queryParams, final String jsonAttribute) {
+        final String URL = SAVINGS_ACCOUNT_URL + "?" + queryParams + "&" + Utils.TENANT_IDENTIFIER;
+        return Utils.performServerGet(requestSpec, responseSpec, URL, jsonAttribute);
+    }
+
     public Object getSavingsAccountDetail(final Integer savingsID, final String jsonAttribute) {
         final String URL = SAVINGS_ACCOUNT_URL + "/" + savingsID + "?associations=all&" + Utils.TENANT_IDENTIFIER;
         return Utils.performServerGet(requestSpec, responseSpec, URL, jsonAttribute);

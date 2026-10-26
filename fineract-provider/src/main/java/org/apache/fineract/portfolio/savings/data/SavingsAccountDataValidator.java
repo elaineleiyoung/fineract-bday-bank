@@ -55,6 +55,7 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.MonthDay;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -410,6 +411,48 @@ public class SavingsAccountDataValidator {
 
         validateOverdraftParams(baseDataValidator, element);
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    public void validateForRetrieveAllBirthday(final String birthMonth, final String birthDay, final String birthYear) {
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME);
+
+        final Integer month = validateIntegerInRange(baseDataValidator, "birthMonth", birthMonth, 1, 12);
+        final Integer day = validateIntegerInRange(baseDataValidator, "birthDay", birthDay, 1, 31);
+        final Integer year = validateIntegerInRange(baseDataValidator, "birthYear", birthYear, 1, 9999);
+
+        if (month != null && day != null) {
+            // without a year, check against a leap year so that February 29 is allowed
+            final int yearToCheck = year != null ? year : 2000;
+            if (day > YearMonth.of(yearToCheck, month).lengthOfMonth()) {
+                baseDataValidator.reset().parameter("birthDay").value(day).failWithCode("invalid.month", month);
+            }
+        }
+
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    /**
+     * Returns the parsed value, or null if the value is blank or fails validation.
+     */
+    private Integer validateIntegerInRange(final DataValidatorBuilder baseDataValidator, final String parameterName, final String value,
+            final int min, final int max) {
+        if (StringUtils.isBlank(value)) {
+            return null;
+        }
+        final int number;
+        try {
+            number = Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            baseDataValidator.reset().parameter(parameterName).value(value).failWithCode("not.a.number");
+            return null;
+        }
+        if (number < min || number > max) {
+            baseDataValidator.reset().parameter(parameterName).value(number).inMinMaxRange(min, max);
+            return null;
+        }
+        return number;
     }
 
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
